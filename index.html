@@ -8,20 +8,22 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
         input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] { -moz-appearance: textfield; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect, useRef } = React;
 
-        // Ikone
+        // ============ IKONE ============
         const Icon = ({name, size=24}) => {
             const icons = {
                 wallet: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4M3 5v14a2 2 0 0 0 2 2h16v-5M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>,
@@ -41,72 +43,119 @@
                 send: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>,
                 package: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16.5 9.4L7.5 4.21M21 16V8l-9-5-9 5v8l9 5 9-5zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg>,
                 building: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18zM6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>,
-                landmark: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22h18M6 18V11M10 18V11M14 18V11M18 18V11M12 2l8 5H4l8-5z"/></svg>,
                 users: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
                 barChart: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>,
                 calendar: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
                 calculator: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h8M8 14h2M8 18h2M14 14h2M14 18h2"/></svg>,
                 edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>,
                 trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-                alertCircle: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h0"/></svg>,
+                star: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+                store: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+                phone: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+                bread: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="8" rx="9" ry="5"/><path d="M3 8v8a9 5 0 0 0 18 0V8"/></svg>,
             };
             return icons[name] || null;
         };
 
-        // Podaci
+        // ============ PODACI ============
         const LOCATIONS = [
-            { id: 'MP-PAL', name: 'Palačinkarnica', short: 'PAL', company: 'Sweet Collina' },
-            { id: 'MP-P47', name: 'Požeška 47', short: 'P47', company: 'Sweet Collina' },
-            { id: 'MP-P96', name: 'Požeška 96', short: 'P96', company: 'Sweet Collina' },
-            { id: 'MP-NBG', name: 'Novi Beograd', short: 'NBG', company: 'Sweet Collina' },
-            { id: 'MP-DRAVSKA', name: 'Dravska', short: 'DRA', company: 'Sweet Collina' },
-            { id: 'PRO-PEKARA', name: 'Pro Pekara', short: 'PEK', company: 'Sweet Collina' },
-            { id: 'MP-GIR', name: 'Girosito', short: 'GIR', company: 'Prima Vidra' },
+            { id: 'MP-PAL', name: 'Palačinkarnica', short: 'PAL', color: '#EC4899' },
+            { id: 'MP-P47', name: 'Požeška 47', short: 'P-47', color: '#3B82F6' },
+            { id: 'MP-P96', name: 'Požeška 96', short: 'P-96', color: '#8B5CF6' },
+            { id: 'MP-NBG', name: 'Novi Beograd', short: 'NBG', color: '#10B981' },
+            { id: 'MP-DRA', name: 'Dravska', short: 'DRA', color: '#F59E0B' },
+            { id: 'PRO-PEK', name: 'Pekara', short: 'PEK', color: '#EF4444' },
+            { id: 'MP-GIR', name: 'Girosito', short: 'GIR', color: '#6366F1' },
         ];
 
         const ROLES = [
             { id: 'waiter', name: 'Konobar', icon: 'user' },
+            { id: 'baker', name: 'Radnik pekare', icon: 'bread' },
             { id: 'driver', name: 'Vozač', icon: 'truck' },
             { id: 'admin', name: 'Administrator', icon: 'shield' },
+            { id: 'manager', name: 'Menadžment', icon: 'star' },
         ];
 
         const INITIAL_USERS = [
-            { id: 1, pin: '1234', name: 'Marko Marković', role: 'waiter', locationId: 'MP-PAL' },
-            { id: 2, pin: '5678', name: 'Ana Anić', role: 'waiter', locationId: 'MP-P47' },
-            { id: 3, pin: '1111', name: 'Nikola Nikolić', role: 'driver', locationId: null },
-            { id: 4, pin: '2222', name: 'Jelena Jelić', role: 'admin', locationId: null },
+            { id: 1, pin: '1234', name: 'Luka Selić', role: 'waiter', locationId: 'MP-PAL' },
+            { id: 2, pin: '5678', name: 'Ermin Aljo', role: 'waiter', locationId: 'MP-P47' },
+            { id: 3, pin: '3333', name: 'Sandra Čolić', role: 'baker', locationId: 'PRO-PEK' },
+            { id: 4, pin: '2222', name: 'Marija Subašić', role: 'admin', locationId: null },
+            { id: 5, pin: '1111', name: 'Dejan Savić', role: 'driver', locationId: null },
+            { id: 6, pin: '9999', name: 'Marko Mišić', role: 'manager', locationId: null },
+            { id: 7, pin: '8888', name: 'Ana Plećević', role: 'manager', locationId: null },
+            { id: 8, pin: '7777', name: 'Nataša Mišić', role: 'manager', locationId: null },
         ];
 
-        const INITIAL_SPECS = [
-            { id: 1, locationId: 'MP-PAL', date: '10.01.2026.', status: 'pending', employee: 'M.M.', waiterData: { eBar: 85000, prenos: 12500, kartica: 28000, gotovina: 44500 }, inSafe: 44500 },
-            { id: 2, locationId: 'MP-P47', date: '10.01.2026.', status: 'pending', employee: 'A.A.', waiterData: { eBar: 62000, prenos: 8000, kartica: 21500, gotovina: 32500 }, inSafe: 32500 },
-            { id: 3, locationId: 'MP-GIR', date: '10.01.2026.', status: 'verified', employee: 'P.P.', waiterData: { eBar: 95000, prenos: 15000, kartica: 32000, gotovina: 48000 }, inSafe: 48000 },
-            { id: 4, locationId: 'MP-NBG', date: '10.01.2026.', status: 'deposited', employee: 'I.I.', waiterData: { eBar: 78000, prenos: 10000, kartica: 25000, gotovina: 43000 }, inSafe: 0, depositedAmount: 43000, depositDate: '10.01.2026.' },
-            { id: 5, locationId: 'MP-PAL', date: '09.01.2026.', status: 'deposited', employee: 'M.M.', waiterData: { eBar: 72000, prenos: 11000, kartica: 24000, gotovina: 37000 }, inSafe: 0, depositedAmount: 37000, depositDate: '09.01.2026.' },
-            { id: 6, locationId: 'MP-P47', date: '09.01.2026.', status: 'deposited', employee: 'A.A.', waiterData: { eBar: 58000, prenos: 7500, kartica: 19000, gotovina: 31500 }, inSafe: 0, depositedAmount: 31500, depositDate: '09.01.2026.' },
-            { id: 7, locationId: 'MP-P96', date: '09.01.2026.', status: 'deposited', employee: 'J.J.', waiterData: { eBar: 45000, prenos: 5000, kartica: 15000, gotovina: 25000 }, inSafe: 0, depositedAmount: 25000, depositDate: '09.01.2026.' },
-            { id: 8, locationId: 'MP-GIR', date: '09.01.2026.', status: 'deposited', employee: 'P.P.', waiterData: { eBar: 88000, prenos: 14000, kartica: 30000, gotovina: 44000 }, inSafe: 0, depositedAmount: 44000, depositDate: '09.01.2026.' },
+        const DENOMINATIONS = [
+            { value: 5000, label: '5.000' },
+            { value: 2000, label: '2.000' },
+            { value: 1000, label: '1.000' },
+            { value: 500, label: '500' },
+            { value: 200, label: '200' },
+            { value: 100, label: '100' },
+            { value: 50, label: '50' },
+            { value: 20, label: '20' },
+            { value: 10, label: '10' },
         ];
+
+        const CHANNELS = [
+            { id: 'LOK', name: 'Lokal', color: '#3B82F6' },
+            { id: 'DOS', name: 'Dostava', color: '#10B981' },
+            { id: 'TEL', name: 'Telefon', color: '#F59E0B' },
+            { id: 'WOLT', name: 'Wolt', color: '#00CFFF' },
+        ];
+
+        // Demo specifikacije
+        const INITIAL_SPECS = [
+            { id: 1, locationId: 'MP-PAL', date: '10.01.2026.', status: 'pending', employee: 'L.S.', waiterData: { eBar: 85000, prenos: 12500, kartica: 28000, gotovina: 44500, apoeni: {5000:5,2000:4,1000:10,500:6,200:5,100:3,50:0,20:0,10:0} }, inSafe: 44500 },
+            { id: 2, locationId: 'MP-P47', date: '10.01.2026.', status: 'pending', employee: 'E.A.', waiterData: { eBar: 62000, prenos: 8000, kartica: 21500, gotovina: 32500, apoeni: {5000:3,2000:5,1000:8,500:5,200:0,100:0,50:0,20:0,10:0} }, inSafe: 32500 },
+            { id: 3, locationId: 'PRO-PEK', date: '10.01.2026.', status: 'pending', employee: 'S.Č.', waiterData: { eBar: 45000, prenos: 5000, kartica: 12000, gotovina: 28000, apoeni: {5000:3,2000:3,1000:5,500:4,200:5,100:0,50:0,20:0,10:0} }, inSafe: 28000 },
+            { id: 4, locationId: 'MP-GIR', date: '10.01.2026.', status: 'verified', employee: 'P.P.', waiterData: { eBar: 95000, prenos: 15000, kartica: 32000, gotovina: 48000, apoeni: {5000:6,2000:4,1000:8,500:4,200:5,100:0,50:0,20:0,10:0} }, inSafe: 48000 },
+            { id: 5, locationId: 'MP-NBG', date: '10.01.2026.', status: 'deposited', employee: 'I.I.', waiterData: { eBar: 78000, prenos: 10000, kartica: 25000, gotovina: 43000, apoeni: {5000:5,2000:4,1000:8,500:4,200:5,100:0,50:0,20:0,10:0} }, inSafe: 0, depositedAmount: 43000, depositDate: '10.01.2026.' },
+            { id: 6, locationId: 'MP-PAL', date: '09.01.2026.', status: 'deposited', employee: 'L.S.', waiterData: { eBar: 72000, prenos: 11000, kartica: 24000, gotovina: 37000, apoeni: {} }, inSafe: 0, depositedAmount: 37000, depositDate: '09.01.2026.' },
+            { id: 7, locationId: 'MP-P47', date: '09.01.2026.', status: 'deposited', employee: 'E.A.', waiterData: { eBar: 58000, prenos: 7500, kartica: 19000, gotovina: 31500, apoeni: {} }, inSafe: 0, depositedAmount: 31500, depositDate: '09.01.2026.' },
+        ];
+
+        // Generiši demo podatke za izveštaje
+        const generateSalesData = () => {
+            const data = [];
+            for (let day = 1; day <= 10; day++) {
+                const date = `${day.toString().padStart(2, '0')}.01.2026.`;
+                LOCATIONS.forEach(loc => {
+                    const baseGot = Math.floor(Math.random() * 50000) + 30000;
+                    data.push({
+                        date, day, locationId: loc.id,
+                        channels: { LOK: Math.floor(baseGot * 0.6), DOS: Math.floor(baseGot * 0.25), TEL: Math.floor(baseGot * 0.1), WOLT: Math.floor(baseGot * 0.05) },
+                        payments: { GOT: baseGot, KARTICA: Math.floor(baseGot * 0.35), PRENOS: Math.floor(Math.random() * 10000) },
+                        uplacenPazar: Math.floor(baseGot * 0.95),
+                    });
+                });
+            }
+            return data;
+        };
+
+        const SALES_DATA = generateSalesData();
 
         const formatCurrency = (n) => new Intl.NumberFormat('sr-RS').format(n || 0) + ' RSD';
         const formatNumber = (n) => new Intl.NumberFormat('sr-RS').format(n || 0);
 
-        // Notifikacija
+        // ============ KOMPONENTE ============
         const Notification = ({ message, type, onClose }) => (
-            <div className={`fixed top-4 right-4 left-4 z-50 p-4 rounded-lg border-2 shadow-lg flex items-center gap-3 ${type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
+            <div className={`fixed top-4 right-4 left-4 z-50 p-4 rounded-lg border-2 shadow-lg flex items-center gap-3 ${type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
                 <Icon name="bell" /><span className="font-medium flex-1">{message}</span><button onClick={onClose}><Icon name="x" /></button>
             </div>
         );
 
-        // Header
         const Header = ({ user, onLogout, title, onBack }) => {
-            const loc = LOCATIONS.find(l => l.id === user.locationId);
+            const loc = LOCATIONS.find(l => l.id === user?.locationId);
+            const role = ROLES.find(r => r.id === user?.role);
             return (
                 <div className="bg-white border-b sticky top-0 z-40">
                     <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             {onBack && <button onClick={onBack} className="p-2 -ml-2 text-gray-400"><Icon name="arrowLeft" /></button>}
-                            <div><h1 className="font-bold text-gray-800">{title}</h1><p className="text-sm text-gray-500">{user.name}{loc && ` • ${loc.name}`}</p></div>
+                            <div><h1 className="font-bold text-gray-800">{title}</h1><p className="text-sm text-gray-500">{user?.name}{role && ` • ${role.name}`}{loc && ` • ${loc.short}`}</p></div>
                         </div>
                         <button onClick={onLogout} className="p-2 text-gray-400 hover:text-red-500"><Icon name="logout" /></button>
                     </div>
@@ -114,7 +163,7 @@
             );
         };
 
-        // LOGIN
+        // ============ LOGIN ============
         const LoginScreen = ({ onLogin, users }) => {
             const [pin, setPin] = useState('');
             const [error, setError] = useState('');
@@ -123,9 +172,9 @@
                 <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm">
                         <div className="text-center mb-8">
-                            <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600"><Icon name="wallet" /></div>
+                            <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-600"><Icon name="wallet" size={40} /></div>
                             <h1 className="text-2xl font-bold text-gray-800">Predaja Pazara</h1>
-                            <p className="text-gray-500 mt-1">Unesite vašu šifru</p>
+                            <p className="text-gray-500 mt-1">Sweet Collina</p>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="flex justify-center gap-3 mb-6">
@@ -142,12 +191,39 @@
             );
         };
 
-        // KONOBAR - ZAVRŠETAK SMENE
-        const WaiterEndShift = ({ user, onSubmit, onCancel }) => {
+        // ============ SPECIFIKACIJA APOENA ============
+        const DenominationInput = ({ apoeni, setApoeni, readOnly = false }) => {
+            const total = DENOMINATIONS.reduce((sum, d) => sum + (d.value * (apoeni[d.value] || 0)), 0);
+            return (
+                <div className="space-y-2">
+                    <p className="font-semibold text-gray-700">Specifikacija novčanica:</p>
+                    {DENOMINATIONS.map(d => (
+                        <div key={d.value} className="flex items-center gap-2 bg-white rounded-lg p-2 border">
+                            <span className="w-14 font-semibold text-gray-700 text-sm">{d.label}</span>
+                            <span className="text-gray-400">×</span>
+                            {readOnly ? (
+                                <span className="flex-1 text-center font-bold">{apoeni[d.value] || 0}</span>
+                            ) : (
+                                <input type="number" min="0" value={apoeni[d.value] || ''} onChange={(e) => setApoeni({...apoeni, [d.value]: parseInt(e.target.value) || 0})} placeholder="0" className="flex-1 p-2 text-center font-semibold border rounded" />
+                            )}
+                            <span className="w-20 text-right text-sm text-gray-600">{formatNumber(d.value * (apoeni[d.value] || 0))}</span>
+                        </div>
+                    ))}
+                    <div className="flex justify-between items-center bg-green-100 rounded-lg p-3 mt-3">
+                        <span className="font-bold text-green-800">UKUPNO:</span>
+                        <span className="font-bold text-xl text-green-800">{formatCurrency(total)}</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============ KONOBAR/PEKAR - ZAVRŠETAK SMENE ============
+        const WorkerEndShift = ({ user, onSubmit, onCancel }) => {
             const [step, setStep] = useState(1);
-            const [data, setData] = useState({ eBar: '', prenos: '', kartica: '', gotovina: '' });
+            const [data, setData] = useState({ eBar: '', prenos: '', kartica: '' });
+            const [apoeni, setApoeni] = useState({});
             const loc = LOCATIONS.find(l => l.id === user.locationId);
-            const total = (parseInt(data.prenos) || 0) + (parseInt(data.kartica) || 0) + (parseInt(data.gotovina) || 0);
+            const gotovina = DENOMINATIONS.reduce((sum, d) => sum + (d.value * (apoeni[d.value] || 0)), 0);
 
             return (
                 <div className="p-4 space-y-4">
@@ -158,7 +234,7 @@
 
                     {step === 1 && (
                         <>
-                            <h2 className="text-xl font-bold">Unesite zaduženje</h2>
+                            <h2 className="text-xl font-bold">1. Zaduženje i plaćanja</h2>
                             <div className="bg-white rounded-xl p-4 border-2">
                                 <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2"><Icon name="calculator" size={18} /> E-Bar zaduženje</label>
                                 <input type="number" value={data.eBar} onChange={(e) => setData({...data, eBar: e.target.value})} placeholder="0" className="w-full p-4 text-2xl font-bold text-center border-2 rounded-xl" />
@@ -171,27 +247,35 @@
                                 <label className="text-sm font-medium text-purple-700 flex items-center gap-2 mb-2"><Icon name="creditCard" size={18} /> Kartica (Terminal)</label>
                                 <input type="number" value={data.kartica} onChange={(e) => setData({...data, kartica: e.target.value})} placeholder="0" className="w-full p-4 text-2xl font-bold text-center border-2 border-purple-200 rounded-xl bg-white" />
                             </div>
-                            <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
-                                <label className="text-sm font-medium text-green-700 flex items-center gap-2 mb-2"><Icon name="banknote" size={18} /> Gotovina</label>
-                                <input type="number" value={data.gotovina} onChange={(e) => setData({...data, gotovina: e.target.value})} placeholder="0" className="w-full p-4 text-2xl font-bold text-center border-2 border-green-200 rounded-xl bg-white" />
-                            </div>
-                            <button onClick={() => setStep(2)} disabled={!data.eBar || !data.gotovina} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-semibold disabled:bg-gray-300">Nastavi</button>
+                            <button onClick={() => setStep(2)} disabled={!data.eBar} className="w-full py-4 bg-indigo-600 text-white rounded-xl font-semibold disabled:bg-gray-300">Nastavi → Gotovina</button>
                         </>
                     )}
 
                     {step === 2 && (
                         <>
-                            <h2 className="text-xl font-bold">Potvrda</h2>
+                            <h2 className="text-xl font-bold">2. Specifikacija gotovine</h2>
+                            <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
+                                <DenominationInput apoeni={apoeni} setApoeni={setApoeni} />
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 rounded-xl font-semibold">← Nazad</button>
+                                <button onClick={() => setStep(3)} disabled={gotovina === 0} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-semibold disabled:bg-gray-300">Nastavi →</button>
+                            </div>
+                        </>
+                    )}
+
+                    {step === 3 && (
+                        <>
+                            <h2 className="text-xl font-bold">3. Potvrda</h2>
                             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                                 <div className="flex justify-between py-2 border-b"><span>E-Bar:</span><span className="font-bold">{formatCurrency(data.eBar)}</span></div>
                                 <div className="flex justify-between py-2 border-b text-blue-700"><span>Prenos:</span><span className="font-bold">{formatCurrency(data.prenos)}</span></div>
                                 <div className="flex justify-between py-2 border-b text-purple-700"><span>Kartica:</span><span className="font-bold">{formatCurrency(data.kartica)}</span></div>
-                                <div className="flex justify-between py-2 border-b text-green-700"><span>Gotovina:</span><span className="font-bold">{formatCurrency(data.gotovina)}</span></div>
-                                <div className="flex justify-between py-2 bg-indigo-100 rounded px-3"><span className="font-semibold">UKUPNO:</span><span className="font-bold text-lg">{formatCurrency(total)}</span></div>
+                                <div className="flex justify-between py-2 text-green-700"><span>Gotovina:</span><span className="font-bold">{formatCurrency(gotovina)}</span></div>
                             </div>
                             <div className="flex gap-3">
-                                <button onClick={() => setStep(1)} className="flex-1 py-4 border-2 rounded-xl font-semibold">Nazad</button>
-                                <button onClick={() => onSubmit({ eBar: parseInt(data.eBar)||0, prenos: parseInt(data.prenos)||0, kartica: parseInt(data.kartica)||0, gotovina: parseInt(data.gotovina)||0 })} className="flex-1 py-4 bg-green-500 text-white rounded-xl font-semibold">✓ Predaj</button>
+                                <button onClick={() => setStep(2)} className="flex-1 py-4 border-2 rounded-xl font-semibold">← Nazad</button>
+                                <button onClick={() => onSubmit({ eBar: parseInt(data.eBar)||0, prenos: parseInt(data.prenos)||0, kartica: parseInt(data.kartica)||0, gotovina, apoeni })} className="flex-1 py-4 bg-green-500 text-white rounded-xl font-semibold">✓ Predaj</button>
                             </div>
                         </>
                     )}
@@ -200,12 +284,12 @@
             );
         };
 
-        // KONOBAR HOME
-        const WaiterHome = ({ user, currentShift, onStartShift, onEndShift }) => {
+        // ============ KONOBAR HOME ============
+        const WorkerHome = ({ user, currentShift, onStartShift, onEndShift }) => {
             const [showEndShift, setShowEndShift] = useState(false);
             const loc = LOCATIONS.find(l => l.id === user.locationId);
 
-            if (showEndShift) return <WaiterEndShift user={user} onSubmit={(data) => { onEndShift(data); setShowEndShift(false); }} onCancel={() => setShowEndShift(false)} />;
+            if (showEndShift) return <WorkerEndShift user={user} onSubmit={(data) => { onEndShift(data); setShowEndShift(false); }} onCancel={() => setShowEndShift(false)} />;
 
             return (
                 <div className="p-4 space-y-4">
@@ -220,14 +304,14 @@
                         </button>
                     ) : (
                         <button onClick={() => setShowEndShift(true)} className="w-full bg-orange-500 text-white rounded-2xl p-6 flex items-center justify-between">
-                            <div className="flex items-center gap-4"><div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center"><Icon name="logout" /></div><div className="text-left"><p className="font-bold text-lg">Završi smenu</p></div></div><Icon name="chevronRight" />
+                            <div className="flex items-center gap-4"><div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center"><Icon name="logout" /></div><div className="text-left"><p className="font-bold text-lg">Završi smenu</p><p className="text-sm opacity-80">Predaja pazara</p></div></div><Icon name="chevronRight" />
                         </button>
                     )}
                 </div>
             );
         };
 
-        // VOZAČ
+        // ============ VOZAČ ============
         const DriverHome = ({ pickups, setPickups, onHandover }) => {
             const allPicked = pickups.every(p => p.status === 'picked');
             return (
@@ -257,159 +341,200 @@
             );
         };
 
-        // IZVEŠTAJI - DNEVNI
-        const DailyOverview = ({ specs, selectedDate, onSelectDate }) => {
-            const dates = [...new Set(specs.map(s => s.date))].sort().reverse();
-            const daySpecs = specs.filter(s => s.date === selectedDate);
-            const summary = { eBar: daySpecs.reduce((s, sp) => s + (sp.waiterData?.eBar || 0), 0), prenos: daySpecs.reduce((s, sp) => s + (sp.waiterData?.prenos || 0), 0), kartica: daySpecs.reduce((s, sp) => s + (sp.waiterData?.kartica || 0), 0), gotovina: daySpecs.reduce((s, sp) => s + (sp.waiterData?.gotovina || 0), 0) };
+        // ============ GRAFIKON ============
+        const SalesChart = ({ data, type = 'line', title }) => {
+            const chartRef = useRef(null);
+            const canvasRef = useRef(null);
+
+            useEffect(() => {
+                if (chartRef.current) chartRef.current.destroy();
+                const ctx = canvasRef.current.getContext('2d');
+                chartRef.current = new Chart(ctx, {
+                    type: type,
+                    data: data,
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10 } } },
+                        scales: type !== 'pie' && type !== 'doughnut' ? { y: { beginAtZero: true, ticks: { callback: (v) => formatNumber(v) } } } : undefined
+                    }
+                });
+                return () => { if (chartRef.current) chartRef.current.destroy(); };
+            }, [data, type]);
 
             return (
-                <div className="space-y-4">
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                        {dates.map(date => <button key={date} onClick={() => onSelectDate(date)} className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${selectedDate === date ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>{date}</button>)}
-                    </div>
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-4 text-white">
-                        <p className="font-semibold mb-3">{selectedDate} - Sumarno</p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-white/20 rounded-xl p-3"><p className="text-xs opacity-80">E-Bar</p><p className="text-lg font-bold">{formatNumber(summary.eBar)}</p></div>
-                            <div className="bg-white/20 rounded-xl p-3"><p className="text-xs opacity-80">Prenos</p><p className="text-lg font-bold">{formatNumber(summary.prenos)}</p></div>
-                            <div className="bg-white/20 rounded-xl p-3"><p className="text-xs opacity-80">Kartica</p><p className="text-lg font-bold">{formatNumber(summary.kartica)}</p></div>
-                            <div className="bg-white/20 rounded-xl p-3"><p className="text-xs opacity-80">Gotovina</p><p className="text-lg font-bold">{formatNumber(summary.gotovina)}</p></div>
-                        </div>
-                    </div>
-                    <div className="bg-white rounded-xl border-2 overflow-hidden">
-                        <div className="bg-gray-50 p-3 border-b font-bold">Po radnjama</div>
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50"><tr><th className="text-left p-3">Radnja</th><th className="text-right p-3">E-Bar</th><th className="text-right p-3">Prenos</th><th className="text-right p-3">Kartica</th><th className="text-right p-3 text-green-700">Gotovina</th></tr></thead>
-                            <tbody>
-                                {daySpecs.map(sp => {
-                                    const loc = LOCATIONS.find(l => l.id === sp.locationId);
-                                    return <tr key={sp.id} className="border-t"><td className="p-3 font-semibold">{loc?.short}<br/><span className="text-xs text-gray-500">{sp.employee}</span></td><td className="text-right p-3">{formatNumber(sp.waiterData?.eBar)}</td><td className="text-right p-3 text-blue-600">{formatNumber(sp.waiterData?.prenos)}</td><td className="text-right p-3 text-purple-600">{formatNumber(sp.waiterData?.kartica)}</td><td className="text-right p-3 font-bold text-green-700">{formatNumber(sp.waiterData?.gotovina)}</td></tr>;
-                                })}
-                            </tbody>
-                            <tfoot className="bg-indigo-50 font-bold"><tr><td className="p-3">UKUPNO</td><td className="text-right p-3">{formatNumber(summary.eBar)}</td><td className="text-right p-3 text-blue-600">{formatNumber(summary.prenos)}</td><td className="text-right p-3 text-purple-600">{formatNumber(summary.kartica)}</td><td className="text-right p-3 text-green-700">{formatNumber(summary.gotovina)}</td></tr></tfoot>
-                        </table>
-                    </div>
+                <div className="bg-white rounded-xl p-4 border-2">
+                    {title && <p className="font-bold text-gray-800 mb-3">{title}</p>}
+                    <div style={{ height: '200px' }}><canvas ref={canvasRef}></canvas></div>
                 </div>
             );
         };
 
-        // IZVEŠTAJI - MESEČNI
-        const MonthlyReport = ({ specs }) => {
-            const dates = [...new Set(specs.map(s => s.date))].sort();
-            const dailySummaries = dates.map(date => {
-                const daySpecs = specs.filter(s => s.date === date);
-                return { date, eBar: daySpecs.reduce((s, sp) => s + (sp.waiterData?.eBar || 0), 0), prenos: daySpecs.reduce((s, sp) => s + (sp.waiterData?.prenos || 0), 0), kartica: daySpecs.reduce((s, sp) => s + (sp.waiterData?.kartica || 0), 0), gotovina: daySpecs.reduce((s, sp) => s + (sp.waiterData?.gotovina || 0), 0), locations: daySpecs.length };
+        // ============ IZVEŠTAJI ============
+        const Reports = ({ salesData, specs }) => {
+            const [tab, setTab] = useState('dashboard');
+            const [selectedLocation, setSelectedLocation] = useState('ALL');
+
+            const filteredData = selectedLocation === 'ALL' ? salesData : salesData.filter(d => d.locationId === selectedLocation);
+
+            const totals = filteredData.reduce((acc, d) => ({
+                GOT: acc.GOT + d.payments.GOT,
+                KARTICA: acc.KARTICA + d.payments.KARTICA,
+                PRENOS: acc.PRENOS + d.payments.PRENOS,
+                LOK: acc.LOK + d.channels.LOK,
+                DOS: acc.DOS + d.channels.DOS,
+                TEL: acc.TEL + d.channels.TEL,
+                WOLT: acc.WOLT + d.channels.WOLT,
+            }), { GOT: 0, KARTICA: 0, PRENOS: 0, LOK: 0, DOS: 0, TEL: 0, WOLT: 0 });
+
+            const dailyTotals = {};
+            filteredData.forEach(d => {
+                if (!dailyTotals[d.day]) dailyTotals[d.day] = { GOT: 0, KARTICA: 0, PRENOS: 0 };
+                dailyTotals[d.day].GOT += d.payments.GOT;
+                dailyTotals[d.day].KARTICA += d.payments.KARTICA;
+                dailyTotals[d.day].PRENOS += d.payments.PRENOS;
             });
-            const monthTotal = { eBar: dailySummaries.reduce((s, d) => s + d.eBar, 0), prenos: dailySummaries.reduce((s, d) => s + d.prenos, 0), kartica: dailySummaries.reduce((s, d) => s + d.kartica, 0), gotovina: dailySummaries.reduce((s, d) => s + d.gotovina, 0) };
-            const byLocation = LOCATIONS.map(loc => {
-                const locSpecs = specs.filter(s => s.locationId === loc.id);
-                return { ...loc, eBar: locSpecs.reduce((s, sp) => s + (sp.waiterData?.eBar || 0), 0), prenos: locSpecs.reduce((s, sp) => s + (sp.waiterData?.prenos || 0), 0), kartica: locSpecs.reduce((s, sp) => s + (sp.waiterData?.kartica || 0), 0), gotovina: locSpecs.reduce((s, sp) => s + (sp.waiterData?.gotovina || 0), 0), count: locSpecs.length };
-            }).filter(l => l.count > 0);
 
-            return (
-                <div className="space-y-4">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-6 text-white">
-                        <p className="font-bold text-lg mb-4">Januar 2026 - Sumarno</p>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div><p className="opacity-80 text-sm">E-Bar</p><p className="text-2xl font-bold">{formatNumber(monthTotal.eBar)}</p></div>
-                            <div><p className="opacity-80 text-sm">Gotovina</p><p className="text-2xl font-bold">{formatNumber(monthTotal.gotovina)}</p></div>
-                            <div><p className="opacity-80 text-sm">Prenos</p><p className="text-xl font-bold">{formatNumber(monthTotal.prenos)}</p></div>
-                            <div><p className="opacity-80 text-sm">Kartica</p><p className="text-xl font-bold">{formatNumber(monthTotal.kartica)}</p></div>
-                        </div>
-                    </div>
-                    <div className="bg-white rounded-xl border-2 overflow-hidden">
-                        <div className="bg-gray-50 p-3 border-b font-bold">Mesečno po radnjama</div>
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50"><tr><th className="text-left p-3">Radnja</th><th className="text-right p-3">E-Bar</th><th className="text-right p-3">Prenos</th><th className="text-right p-3">Kartica</th><th className="text-right p-3 text-green-700">Gotovina</th></tr></thead>
-                            <tbody>{byLocation.map(loc => <tr key={loc.id} className="border-t"><td className="p-3 font-semibold">{loc.name}<br/><span className="text-xs text-gray-500">{loc.count} dana</span></td><td className="text-right p-3">{formatNumber(loc.eBar)}</td><td className="text-right p-3 text-blue-600">{formatNumber(loc.prenos)}</td><td className="text-right p-3 text-purple-600">{formatNumber(loc.kartica)}</td><td className="text-right p-3 font-bold text-green-700">{formatNumber(loc.gotovina)}</td></tr>)}</tbody>
-                            <tfoot className="bg-purple-50 font-bold"><tr><td className="p-3">UKUPNO</td><td className="text-right p-3">{formatNumber(monthTotal.eBar)}</td><td className="text-right p-3 text-blue-600">{formatNumber(monthTotal.prenos)}</td><td className="text-right p-3 text-purple-600">{formatNumber(monthTotal.kartica)}</td><td className="text-right p-3 text-green-700">{formatNumber(monthTotal.gotovina)}</td></tr></tfoot>
-                        </table>
-                    </div>
-                    <div className="bg-white rounded-xl border-2 overflow-hidden">
-                        <div className="bg-gray-50 p-3 border-b font-bold">Po danima</div>
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-50"><tr><th className="text-left p-3">Datum</th><th className="text-center p-3">Radnje</th><th className="text-right p-3">E-Bar</th><th className="text-right p-3">Prenos</th><th className="text-right p-3">Kartica</th><th className="text-right p-3 text-green-700">Gotovina</th></tr></thead>
-                            <tbody>{dailySummaries.map(day => <tr key={day.date} className="border-t"><td className="p-3 font-semibold">{day.date}</td><td className="text-center p-3">{day.locations}</td><td className="text-right p-3">{formatNumber(day.eBar)}</td><td className="text-right p-3 text-blue-600">{formatNumber(day.prenos)}</td><td className="text-right p-3 text-purple-600">{formatNumber(day.kartica)}</td><td className="text-right p-3 font-bold text-green-700">{formatNumber(day.gotovina)}</td></tr>)}</tbody>
-                        </table>
-                    </div>
-                </div>
-            );
-        };
+            const lineChartData = {
+                labels: Object.keys(dailyTotals).map(d => `${d}.`),
+                datasets: [
+                    { label: 'Gotovina', data: Object.values(dailyTotals).map(d => d.GOT), borderColor: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'Kartica', data: Object.values(dailyTotals).map(d => d.KARTICA), borderColor: '#8B5CF6', tension: 0.3 },
+                ]
+            };
 
-        // IZVEŠTAJI
-        const Reports = ({ specs }) => {
-            const [tab, setTab] = useState('daily');
-            const [selectedDate, setSelectedDate] = useState('10.01.2026.');
+            const channelChartData = {
+                labels: ['Lokal', 'Dostava', 'Telefon', 'Wolt'],
+                datasets: [{ data: [totals.LOK, totals.DOS, totals.TEL, totals.WOLT], backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#00CFFF'] }]
+            };
+
             return (
                 <div className="p-4 space-y-4">
                     <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+                        <button onClick={() => setTab('dashboard')} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${tab === 'dashboard' ? 'bg-white shadow text-indigo-600' : ''}`}>Dashboard</button>
                         <button onClick={() => setTab('daily')} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${tab === 'daily' ? 'bg-white shadow text-indigo-600' : ''}`}>Dnevni</button>
-                        <button onClick={() => setTab('monthly')} className={`flex-1 py-2 rounded-lg text-sm font-semibold ${tab === 'monthly' ? 'bg-white shadow text-indigo-600' : ''}`}>Mesečni</button>
                     </div>
-                    {tab === 'daily' && <DailyOverview specs={specs} selectedDate={selectedDate} onSelectDate={setSelectedDate} />}
-                    {tab === 'monthly' && <MonthlyReport specs={specs} />}
+
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        <button onClick={() => setSelectedLocation('ALL')} className={`px-3 py-1 rounded-lg text-sm font-semibold whitespace-nowrap ${selectedLocation === 'ALL' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Sve</button>
+                        {LOCATIONS.map(loc => (
+                            <button key={loc.id} onClick={() => setSelectedLocation(loc.id)} className={`px-3 py-1 rounded-lg text-sm font-semibold whitespace-nowrap ${selectedLocation === loc.id ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>{loc.short}</button>
+                        ))}
+                    </div>
+
+                    {tab === 'dashboard' && (
+                        <>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-4 text-white">
+                                    <p className="text-xs opacity-80">💵 Gotovina</p>
+                                    <p className="text-xl font-bold">{formatNumber(totals.GOT)}</p>
+                                </div>
+                                <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-2xl p-4 text-white">
+                                    <p className="text-xs opacity-80">💳 Kartica</p>
+                                    <p className="text-xl font-bold">{formatNumber(totals.KARTICA)}</p>
+                                </div>
+                                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 text-white">
+                                    <p className="text-xs opacity-80">📤 Prenos</p>
+                                    <p className="text-xl font-bold">{formatNumber(totals.PRENOS)}</p>
+                                </div>
+                                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 text-white">
+                                    <p className="text-xs opacity-80">📊 Ukupno</p>
+                                    <p className="text-xl font-bold">{formatNumber(totals.GOT + totals.KARTICA + totals.PRENOS)}</p>
+                                </div>
+                            </div>
+                            <SalesChart data={lineChartData} type="line" title="📈 Trend po danima" />
+                            <SalesChart data={channelChartData} type="doughnut" title="🍩 Kanali prodaje" />
+                        </>
+                    )}
+
+                    {tab === 'daily' && (
+                        <div className="space-y-3">
+                            {Object.entries(dailyTotals).sort((a,b) => b[0] - a[0]).map(([day, data]) => (
+                                <div key={day} className="bg-white rounded-xl p-4 border-2">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="font-bold text-lg">{day}. januar</span>
+                                        <span className="font-bold text-green-600">{formatNumber(data.GOT + data.KARTICA + data.PRENOS)}</span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-xs">
+                                        <div className="bg-green-50 rounded p-2 text-center"><p className="text-green-600">Gotovina</p><p className="font-bold">{formatNumber(data.GOT)}</p></div>
+                                        <div className="bg-purple-50 rounded p-2 text-center"><p className="text-purple-600">Kartica</p><p className="font-bold">{formatNumber(data.KARTICA)}</p></div>
+                                        <div className="bg-blue-50 rounded p-2 text-center"><p className="text-blue-600">Prenos</p><p className="font-bold">{formatNumber(data.PRENOS)}</p></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             );
         };
 
-        // ADMIN HOME
-        const AdminHome = ({ onManageUsers, onReports, specs, setSpecs }) => {
+        // ============ ADMIN - PROVERA ============
+        const VerifySpec = ({ spec, onVerify, onCancel }) => {
+            const [adminApoeni, setAdminApoeni] = useState(spec.waiterData?.apoeni || {});
+            const loc = LOCATIONS.find(l => l.id === spec.locationId);
+            const waiterGot = spec.waiterData?.gotovina || 0;
+            const adminGot = DENOMINATIONS.reduce((sum, d) => sum + (d.value * (adminApoeni[d.value] || 0)), 0);
+            const diff = adminGot - waiterGot;
+
+            return (
+                <div className="p-4 space-y-4">
+                    <div className="bg-indigo-50 rounded-xl p-4">
+                        <p className="font-bold text-indigo-800">{loc?.name}</p>
+                        <p className="text-sm text-indigo-600">{spec.date} • {spec.employee}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                        <p className="font-semibold mb-2">Radnik prijavio:</p>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="bg-white rounded p-2"><span className="text-gray-500">E-Bar:</span> <span className="font-bold">{formatNumber(spec.waiterData?.eBar)}</span></div>
+                            <div className="bg-green-50 rounded p-2"><span className="text-green-600">Gotovina:</span> <span className="font-bold">{formatNumber(waiterGot)}</span></div>
+                        </div>
+                    </div>
+                    <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
+                        <DenominationInput apoeni={adminApoeni} setApoeni={setAdminApoeni} />
+                    </div>
+                    <div className={`rounded-xl p-4 ${diff === 0 ? 'bg-green-100' : diff > 0 ? 'bg-blue-100' : 'bg-red-100'}`}>
+                        <div className="flex justify-between"><span>Razlika:</span><span className="font-bold text-xl">{diff > 0 ? '+' : ''}{formatCurrency(diff)}{diff === 0 && ' ✓'}</span></div>
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={onCancel} className="flex-1 py-4 border-2 rounded-xl font-semibold">Otkaži</button>
+                        <button onClick={() => onVerify(spec.id, adminGot)} className="flex-1 py-4 bg-green-500 text-white rounded-xl font-semibold">✓ Potvrdi</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // ============ ADMIN HOME ============
+        const AdminHome = ({ onUsers, onReports, specs, setSpecs }) => {
             const [tab, setTab] = useState('pending');
-            const [verifyingId, setVerifyingId] = useState(null);
-            const [adminGotovina, setAdminGotovina] = useState(0);
+            const [verifying, setVerifying] = useState(null);
 
             const pending = specs.filter(s => s.status === 'pending');
             const verified = specs.filter(s => s.status === 'verified');
             const deposited = specs.filter(s => s.status === 'deposited');
             const totalInSafe = verified.reduce((sum, s) => sum + (s.inSafe || 0), 0);
 
-            const handleVerify = (id) => {
-                setSpecs(specs.map(s => s.id === id ? { ...s, status: 'verified', inSafe: adminGotovina } : s));
-                setVerifyingId(null);
+            const handleVerify = (id, gotovina) => {
+                setSpecs(specs.map(s => s.id === id ? { ...s, status: 'verified', inSafe: gotovina } : s));
+                setVerifying(null);
             };
 
             const handleDeposit = (id) => {
-                const today = new Date().toLocaleDateString('sr-RS');
-                setSpecs(specs.map(s => s.id === id ? { ...s, status: 'deposited', depositedAmount: s.inSafe, depositDate: today, inSafe: 0 } : s));
+                setSpecs(specs.map(s => s.id === id ? { ...s, status: 'deposited', depositedAmount: s.inSafe, depositDate: new Date().toLocaleDateString('sr-RS'), inSafe: 0 } : s));
             };
 
-            if (verifyingId) {
-                const sp = specs.find(s => s.id === verifyingId);
-                const loc = LOCATIONS.find(l => l.id === sp?.locationId);
-                return (
-                    <div className="p-4 space-y-4">
-                        <div className="bg-indigo-50 rounded-xl p-4">
-                            <p className="font-bold text-indigo-800">{loc?.name}</p>
-                            <p className="text-sm text-indigo-600">{sp?.date} • {sp?.employee}</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                            <div className="flex justify-between"><span>E-Bar:</span><span className="font-bold">{formatCurrency(sp?.waiterData?.eBar)}</span></div>
-                            <div className="flex justify-between text-blue-700"><span>Prenos:</span><span className="font-bold">{formatCurrency(sp?.waiterData?.prenos)}</span></div>
-                            <div className="flex justify-between text-purple-700"><span>Kartica:</span><span className="font-bold">{formatCurrency(sp?.waiterData?.kartica)}</span></div>
-                            <div className="flex justify-between text-green-700 pt-2 border-t"><span className="font-semibold">Gotovina (prijavljeno):</span><span className="font-bold text-lg">{formatCurrency(sp?.waiterData?.gotovina)}</span></div>
-                        </div>
-                        <div className="bg-green-50 rounded-xl p-4 border-2 border-green-200">
-                            <label className="text-sm font-medium text-green-700 mb-2 block">Vaše brojanje gotovine:</label>
-                            <input type="number" value={adminGotovina} onChange={(e) => setAdminGotovina(parseInt(e.target.value) || 0)} className="w-full p-4 text-2xl font-bold text-center border-2 border-green-200 rounded-xl" />
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => setVerifyingId(null)} className="flex-1 py-4 border-2 rounded-xl font-semibold">Otkaži</button>
-                            <button onClick={() => handleVerify(verifyingId)} className="flex-1 py-4 bg-green-500 text-white rounded-xl font-semibold">✓ Potvrdi</button>
-                        </div>
-                    </div>
-                );
-            }
+            if (verifying) return <VerifySpec spec={verifying} onVerify={handleVerify} onCancel={() => setVerifying(null)} />;
 
             return (
                 <div className="p-4 space-y-4">
                     <div className="grid grid-cols-2 gap-3">
-                        <button onClick={onManageUsers} className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-2xl p-4"><Icon name="users" /><p className="font-semibold mt-2">Korisnici</p></button>
+                        <button onClick={onUsers} className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-2xl p-4"><Icon name="users" /><p className="font-semibold mt-2">Korisnici</p></button>
                         <button onClick={onReports} className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-4"><Icon name="barChart" /><p className="font-semibold mt-2">Izveštaji</p></button>
                     </div>
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white flex justify-between items-center">
-                        <div><p className="opacity-80 text-sm">U sefu</p><p className="text-2xl font-bold">{formatCurrency(totalInSafe)}</p></div>
+
+                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white">
+                        <p className="opacity-80 text-sm">U sefu</p>
+                        <p className="text-2xl font-bold">{formatCurrency(totalInSafe)}</p>
                     </div>
+
                     <div className="grid grid-cols-3 gap-2">
                         <button onClick={() => setTab('pending')} className={`rounded-xl p-3 ${tab === 'pending' ? 'bg-orange-100 border-2 border-orange-300' : 'bg-gray-50'}`}><p className="text-2xl font-bold text-orange-600">{pending.length}</p><p className="text-xs">Za proveru</p></button>
                         <button onClick={() => setTab('verified')} className={`rounded-xl p-3 ${tab === 'verified' ? 'bg-blue-100 border-2 border-blue-300' : 'bg-gray-50'}`}><p className="text-2xl font-bold text-blue-600">{verified.length}</p><p className="text-xs">U sefu</p></button>
@@ -421,12 +546,7 @@
                         return (
                             <div key={sp.id} className="bg-white rounded-xl p-4 border-2 border-orange-200">
                                 <div className="flex justify-between mb-3"><div><p className="font-semibold">{loc?.name}</p><p className="text-sm text-gray-500">{sp.date} • {sp.employee}</p></div><p className="font-bold text-lg text-green-700">{formatCurrency(sp.waiterData?.gotovina)}</p></div>
-                                <div className="grid grid-cols-3 gap-2 text-xs mb-3">
-                                    <div className="bg-gray-50 rounded p-2 text-center"><p className="text-gray-500">E-Bar</p><p className="font-bold">{formatNumber(sp.waiterData?.eBar)}</p></div>
-                                    <div className="bg-blue-50 rounded p-2 text-center"><p className="text-blue-600">Prenos</p><p className="font-bold text-blue-700">{formatNumber(sp.waiterData?.prenos)}</p></div>
-                                    <div className="bg-purple-50 rounded p-2 text-center"><p className="text-purple-600">Kartica</p><p className="font-bold text-purple-700">{formatNumber(sp.waiterData?.kartica)}</p></div>
-                                </div>
-                                <button onClick={() => { setVerifyingId(sp.id); setAdminGotovina(sp.waiterData?.gotovina || 0); }} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold">Proveri gotovinu</button>
+                                <button onClick={() => setVerifying(sp)} className="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold">Proveri</button>
                             </div>
                         );
                     })}
@@ -436,7 +556,7 @@
                         return (
                             <div key={sp.id} className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
                                 <div className="flex justify-between items-center mb-3"><div><p className="font-semibold">{loc?.name}</p><p className="text-sm text-gray-500">{sp.date}</p></div><p className="font-bold text-xl text-blue-700">{formatCurrency(sp.inSafe)}</p></div>
-                                <button onClick={() => handleDeposit(sp.id)} className="w-full py-3 bg-green-500 text-white rounded-lg font-semibold">Označi kao uplaćeno</button>
+                                <button onClick={() => handleDeposit(sp.id)} className="w-full py-3 bg-green-500 text-white rounded-lg font-semibold">Označi uplaćeno</button>
                             </div>
                         );
                     })}
@@ -453,23 +573,38 @@
             );
         };
 
-        // USER MANAGEMENT
-        const UserManagement = ({ users, onAdd, onUpdate, onDelete }) => {
+        // ============ KORISNICI ============
+        const UserManagement = ({ users, setUsers, notify }) => {
             const [view, setView] = useState('list');
             const [editing, setEditing] = useState(null);
             const [form, setForm] = useState({ name: '', pin: '', role: 'waiter', locationId: '' });
+
+            const handleSave = () => {
+                if (!form.name || form.pin.length !== 4) return;
+                if (editing) { setUsers(users.map(u => u.id === editing.id ? {...u, ...form} : u)); notify('Sačuvano!'); }
+                else { setUsers([...users, {...form, id: Math.max(...users.map(u=>u.id))+1}]); notify('Dodato!'); }
+                setView('list'); setForm({ name: '', pin: '', role: 'waiter', locationId: '' }); setEditing(null);
+            };
 
             if (view === 'form') {
                 return (
                     <div className="p-4 space-y-4">
                         <h2 className="text-xl font-bold">{editing ? 'Izmeni' : 'Novi'} korisnik</h2>
-                        <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ime" className="w-full p-4 border-2 rounded-xl" />
+                        <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ime i prezime" className="w-full p-4 border-2 rounded-xl" />
                         <input type="text" value={form.pin} onChange={e => setForm({...form, pin: e.target.value.replace(/\D/g,'').slice(0,4)})} placeholder="PIN" maxLength={4} className="w-full p-4 border-2 rounded-xl text-center text-2xl font-mono" />
-                        <div className="grid grid-cols-3 gap-2">
-                            {ROLES.map(r => <button key={r.id} onClick={() => setForm({...form, role: r.id})} className={`p-3 rounded-xl border-2 ${form.role === r.id ? 'border-indigo-500 bg-indigo-50' : ''}`}><Icon name={r.icon} /><p className="text-sm mt-1">{r.name}</p></button>)}
+                        <div className="grid grid-cols-2 gap-2">
+                            {ROLES.map(r => <button key={r.id} onClick={() => setForm({...form, role: r.id})} className={`p-3 rounded-xl border-2 flex flex-col items-center ${form.role === r.id ? 'border-indigo-500 bg-indigo-50' : ''}`}><Icon name={r.icon} /><p className="text-xs mt-1">{r.name}</p></button>)}
                         </div>
-                        {form.role === 'waiter' && <select value={form.locationId} onChange={e => setForm({...form, locationId: e.target.value})} className="w-full p-4 border-2 rounded-xl"><option value="">-- Lokacija --</option>{LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select>}
-                        <div className="flex gap-3"><button onClick={() => setView('list')} className="flex-1 py-4 border-2 rounded-xl font-semibold">Otkaži</button><button onClick={() => { if (editing) onUpdate(editing.id, form); else onAdd(form); setView('list'); setForm({ name: '', pin: '', role: 'waiter', locationId: '' }); setEditing(null); }} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-semibold">Sačuvaj</button></div>
+                        {(form.role === 'waiter' || form.role === 'baker') && (
+                            <select value={form.locationId} onChange={e => setForm({...form, locationId: e.target.value})} className="w-full p-4 border-2 rounded-xl">
+                                <option value="">-- Lokacija --</option>
+                                {LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                            </select>
+                        )}
+                        <div className="flex gap-3">
+                            <button onClick={() => { setView('list'); setEditing(null); }} className="flex-1 py-4 border-2 rounded-xl font-semibold">Otkaži</button>
+                            <button onClick={handleSave} disabled={!form.name || form.pin.length !== 4} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-semibold disabled:bg-gray-300">Sačuvaj</button>
+                        </div>
                     </div>
                 );
             }
@@ -483,7 +618,7 @@
                         return (
                             <div key={u.id} className="bg-white rounded-xl p-4 border-2 flex justify-between items-center">
                                 <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center"><Icon name={r?.icon} size={20} /></div><div><p className="font-semibold">{u.name}</p><p className="text-sm text-gray-500">{r?.name}{l && ` • ${l.short}`}</p></div></div>
-                                <div className="flex items-center gap-2"><span className="px-2 py-1 bg-gray-100 rounded font-mono text-sm">{u.pin}</span><button onClick={() => { setEditing(u); setForm({...u, locationId: u.locationId || ''}); setView('form'); }} className="p-2 text-gray-400"><Icon name="edit" size={18} /></button><button onClick={() => onDelete(u.id)} className="p-2 text-gray-400"><Icon name="trash" size={18} /></button></div>
+                                <div className="flex items-center gap-2"><span className="px-2 py-1 bg-gray-100 rounded font-mono text-sm">{u.pin}</span><button onClick={() => { setEditing(u); setForm({...u, locationId: u.locationId || ''}); setView('form'); }} className="p-2 text-gray-400"><Icon name="edit" size={18} /></button><button onClick={() => { setUsers(users.filter(x => x.id !== u.id)); notify('Obrisano!', 'error'); }} className="p-2 text-gray-400"><Icon name="trash" size={18} /></button></div>
                             </div>
                         );
                     })}
@@ -491,7 +626,7 @@
             );
         };
 
-        // MAIN APP
+        // ============ MAIN APP ============
         function App() {
             const [users, setUsers] = useState(INITIAL_USERS);
             const [specs, setSpecs] = useState(INITIAL_SPECS);
@@ -499,11 +634,15 @@
             const [shift, setShift] = useState(null);
             const [view, setView] = useState('home');
             const [notif, setNotif] = useState(null);
-            const [driverPickups, setDriverPickups] = useState([{ id: 1, locationId: 'MP-PAL', status: 'pending' }, { id: 2, locationId: 'MP-P47', status: 'pending' }, { id: 3, locationId: 'MP-GIR', status: 'pending' }]);
+            const [driverPickups, setDriverPickups] = useState([
+                { id: 1, locationId: 'MP-PAL', status: 'pending' },
+                { id: 2, locationId: 'MP-P47', status: 'pending' },
+                { id: 3, locationId: 'PRO-PEK', status: 'pending' },
+            ]);
 
             const notify = (msg, type='success') => { setNotif({msg, type}); setTimeout(() => setNotif(null), 3000); };
 
-            const handleWaiterEndShift = (data) => {
+            const handleWorkerEndShift = (data) => {
                 const newSpec = { id: specs.length + 1, locationId: user.locationId, date: new Date().toLocaleDateString('sr-RS'), status: 'pending', employee: user.name.split(' ').map(n => n[0]).join('.') + '.', waiterData: data, inSafe: data.gotovina };
                 setSpecs([newSpec, ...specs]);
                 setShift(null);
@@ -512,18 +651,22 @@
 
             if (!user) return <LoginScreen onLogin={setUser} users={users} />;
 
-            const titles = { home: user.role === 'waiter' ? 'Početna' : user.role === 'driver' ? 'Preuzimanje' : 'Administracija', users: 'Korisnici', reports: 'Izveštaji' };
+            const isWorker = user.role === 'waiter' || user.role === 'baker';
+            const isAdmin = user.role === 'admin' || user.role === 'manager';
+            const isDriver = user.role === 'driver';
+
+            const titles = { home: isWorker ? 'Početna' : isDriver ? 'Preuzimanje' : 'Administracija', users: 'Korisnici', reports: 'Izveštaji' };
 
             return (
                 <div className="min-h-screen bg-gray-100">
                     {notif && <Notification message={notif.msg} type={notif.type} onClose={() => setNotif(null)} />}
                     <Header user={user} onLogout={() => { setUser(null); setShift(null); setView('home'); }} title={titles[view]} onBack={view !== 'home' ? () => setView('home') : null} />
                     <div className="max-w-lg mx-auto pb-8">
-                        {user.role === 'waiter' && view === 'home' && <WaiterHome user={user} currentShift={shift} onStartShift={() => { setShift({ startTime: new Date().toLocaleTimeString('sr-RS', {hour:'2-digit', minute:'2-digit'}) }); notify('Smena započeta!'); }} onEndShift={handleWaiterEndShift} />}
-                        {user.role === 'driver' && view === 'home' && <DriverHome pickups={driverPickups} setPickups={setDriverPickups} onHandover={() => { notify('Predato!'); setDriverPickups(driverPickups.map(p => ({...p, status: 'pending'}))); }} />}
-                        {user.role === 'admin' && view === 'home' && <AdminHome onManageUsers={() => setView('users')} onReports={() => setView('reports')} specs={specs} setSpecs={setSpecs} />}
-                        {user.role === 'admin' && view === 'users' && <UserManagement users={users} onAdd={d => { setUsers([...users, {...d, id: Math.max(...users.map(u=>u.id))+1}]); notify('Dodato!'); }} onUpdate={(id,d) => { setUsers(users.map(u => u.id === id ? {...u,...d} : u)); notify('Sačuvano!'); }} onDelete={id => { setUsers(users.filter(u => u.id !== id)); notify('Obrisano!', 'error'); }} />}
-                        {user.role === 'admin' && view === 'reports' && <Reports specs={specs} />}
+                        {isWorker && view === 'home' && <WorkerHome user={user} currentShift={shift} onStartShift={() => { setShift({ startTime: new Date().toLocaleTimeString('sr-RS', {hour:'2-digit', minute:'2-digit'}) }); notify('Smena započeta!'); }} onEndShift={handleWorkerEndShift} />}
+                        {isDriver && view === 'home' && <DriverHome pickups={driverPickups} setPickups={setDriverPickups} onHandover={() => { notify('Predato!'); setDriverPickups(driverPickups.map(p => ({...p, status: 'pending'}))); }} />}
+                        {isAdmin && view === 'home' && <AdminHome onUsers={() => setView('users')} onReports={() => setView('reports')} specs={specs} setSpecs={setSpecs} />}
+                        {isAdmin && view === 'users' && <UserManagement users={users} setUsers={setUsers} notify={notify} />}
+                        {isAdmin && view === 'reports' && <Reports salesData={SALES_DATA} specs={specs} />}
                     </div>
                 </div>
             );
