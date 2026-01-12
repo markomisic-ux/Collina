@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Test v4</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #1a1a2e; 
+            color: white; 
+            padding: 15px; 
+            margin: 0;
+        }
+        .card { background: #252542; padding: 15px; border-radius: 12px; margin: 10px 0; }
+        button { 
+            padding: 15px 20px; border-radius: 8px; border: none; 
+            font-weight: bold; cursor: pointer; margin: 5px; 
+            font-size: 16px; width: 100%;
+        }
+        .btn-yellow { background: #eab308; color: black; }
+        .btn-green { background: #22c55e; color: white; }
+        .btn-blue { background: #3b82f6; color: white; }
+        .btn-red { background: #ef4444; color: white; }
+        .green { color: #4ade80; }
+        .red { color: #f87171; }
+        #log { 
+            background: #0f0f1a; padding: 10px; border-radius: 8px; 
+            height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace;
+        }
+        .banner { 
+            display: none; position: fixed; top: 0; left: 0; right: 0; 
+            background: #22c55e; color: white; padding: 15px; 
+            text-align: center; font-weight: bold; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="banner" class="banner">🔔 Notifikacija!</div>
+    <h2>🔄 Test v4</h2>
+    
+    <div class="card">
+        <p>Status: <span id="status" class="red">-</span></p>
+        <p>Zvuk: <span id="sound" class="red">Ne</span></p>
+    </div>
+
+    <div class="card">
+        <button class="btn-yellow" id="btnActivate">🔊 AKTIVIRAJ ZVUK</button>
+    </div>
+
+    <div class="card">
+        <button class="btn-green" id="btnTicket">➕ Kreiraj tiket</button>
+        <button class="btn-blue" id="btnComment">💬 Komentar</button>
+        <button class="btn-red" id="btnTest">🔔 Test zvuka</button>
+    </div>
+
+    <div class="card">
+        <div id="log">Čekam...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        (function() {
+            var SUPABASE_URL = 'https://oasjtgfphmngvnjcmpdb.supabase.co';
+            var SUPABASE_KEY = 'sb_publishable_jfBWjgDRxxo661HfgKRmxg_LJqrn438';
+            var sb = null;
+            var audioCtx = null;
+            var soundOK = false;
+            var ticketId = null;
+
+            function log(msg) {
+                var el = document.getElementById('log');
+                var time = new Date().toLocaleTimeString();
+                el.innerHTML = '[' + time + '] ' + msg + '<br>' + el.innerHTML;
+            }
+
+            function playSound() {
+                if (!soundOK || !audioCtx) return;
+                try {
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    var osc = audioCtx.createOscillator();
+                    var gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.value = 800;
+                    gain.gain.value = 0.3;
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                    log('🔊 Zvuk!');
+                } catch(e) {
+                    log('Zvuk err: ' + e);
+                }
+            }
+
+            function showBanner(msg) {
+                var b = document.getElementById('banner');
+                b.textContent = '🔔 ' + msg;
+                b.style.display = 'block';
+                setTimeout(function() { b.style.display = 'none'; }, 3000);
+            }
+
+            function notify(msg) {
+                playSound();
+                showBanner(msg);
+                document.body.style.background = '#2d4a2d';
+                setTimeout(function() { document.body.style.background = '#1a1a2e'; }, 300);
+            }
+
+            document.getElementById('btnActivate').onclick = function() {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    var osc = audioCtx.createOscillator();
+                    var gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    gain.gain.value = 0.01;
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                    soundOK = true;
+                    document.getElementById('sound').textContent = 'Da ✅';
+                    document.getElementById('sound').className = 'green';
+                    log('Zvuk aktiviran!');
+                } catch(e) {
+                    log('Greška: ' + e);
+                }
+            };
+
+            document.getElementById('btnTest').onclick = function() {
+                notify('Test radi!');
+            };
+
+            document.getElementById('btnTicket').onclick = function() {
+                if (!sb) { log('Nema konekcije'); return; }
+                var num = 'T-' + Date.now().toString().slice(-6);
+                log('Kreiram...');
+                sb.from('delivery_tickets').insert({
+                    ticket_number: num,
+                    category: 'fuel',
+                    title: 'Test ' + num,
+                    priority: 'medium',
+                    status: 'open',
+                    created_by_name: 'Test'
+                }).select().then(function(res) {
+                    if (res.error) {
+                        log('Err: ' + res.error.message);
+                    } else if (res.data && res.data[0]) {
+                        ticketId = res.data[0].id;
+                        log('OK: ' + num);
+                    }
+                });
+            };
+
+            document.getElementById('btnComment').onclick = function() {
+                if (!sb) { log('Nema konekcije'); return; }
+                if (!ticketId) { log('Prvo kreiraj tiket'); return; }
+                sb.from('delivery_ticket_comments').insert({
+                    ticket_id: ticketId,
+                    user_name: 'Test',
+                    comment: 'Komentar ' + new Date().toLocaleTimeString(),
+                    type: 'comment'
+                }).then(function(res) {
+                    if (res.error) log('Err: ' + res.error.message);
+                    else log('Komentar OK');
+                });
+            };
+
+            function init() {
+                try {
+                    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    log('Supabase OK');
+
+                    // Realtime - simple callback without payload processing
+                    var channel = sb.channel('tickets-channel');
+                    
+                    channel.on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'delivery_tickets' }, 
+                        function() {
+                            log('>>> TIKET PROMENA!');
+                            notify('Tiket!');
+                        }
+                    );
+                    
+                    channel.on('postgres_changes', 
+                        { event: 'INSERT', schema: 'public', table: 'delivery_ticket_comments' }, 
+                        function() {
+                            log('>>> KOMENTAR!');
+                            notify('Komentar!');
+                        }
+                    );
+                    
+                    channel.subscribe(function(status) {
+                        log('Channel: ' + status);
+                        document.getElementById('status').textContent = status;
+                        document.getElementById('status').className = status === 'SUBSCRIBED' ? 'green' : 'red';
+                    });
+
+                } catch(e) {
+                    log('Init err: ' + e);
+                }
+            }
+
+            var checkInterval = setInterval(function() {
+                if (window.supabase) {
+                    clearInterval(checkInterval);
+                    init();
+                }
+            }, 100);
+        })();
+    </script>
+</body>
+</html>
